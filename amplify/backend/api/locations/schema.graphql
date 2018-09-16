@@ -1,0 +1,12 @@
+type User @model {
+  id: ID!
+  name: String!
+  locations: [Locations] @connection(name: "UserLocations")
+}
+type Locations @model {
+  id: ID!
+  lat: Float!
+  long: Float!
+  user: User @connection(name: "UserLocations")
+  data: String!
+}

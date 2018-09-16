@@ -1,0 +1,13 @@
+{
+    "AppSyncApiName": "locations",
+    "AuthCognitoUserPoolId": {
+        "Fn::GetAtt": [
+            "authcognito64d97a67",
+            "Outputs.UserPoolId"
+        ]
+    },
+    "schemaGraphql": "s3://viroignite-20180915155524-deployment/amplify-appsync-files/schema.graphql.1537052956537",
+    "ResolverBucket": "viroignite-20180915155524-deployment",
+    "ResolverRootKey": "amplify-appsync-files",
+    "DeploymentTimestamp": "1537052956537"
+}

@@ -1,0 +1,14 @@
+{
+    "providers": {
+        "awscloudformation": {
+            "AuthRoleName": "viroignite-20180915155524-authRole",
+            "UnauthRoleArn": "arn:aws:iam::442842633063:role/viroignite-20180915155524-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::442842633063:role/viroignite-20180915155524-authRole",
+            "Region": "us-west-2",
+            "DeploymentBucketName": "viroignite-20180915155524-deployment",
+            "UnauthRoleName": "viroignite-20180915155524-unauthRole",
+            "StackName": "viroignite-20180915155524",
+            "StackId": "arn:aws:cloudformation:us-west-2:442842633063:stack/viroignite-20180915155524/6ee39350-b93a-11e8-ab20-02e2b9ae2f96"
+        }
+    }
+}

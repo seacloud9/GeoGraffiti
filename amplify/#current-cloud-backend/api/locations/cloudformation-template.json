@@ -1,0 +1,1766 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {},
+    "Parameters": {
+        "AppSyncApiName": {
+            "Type": "String",
+            "Description": "The name of the AppSync API",
+            "Default": "AppSyncSimpleTransform"
+        },
+        "DynamoDBModelTableReadIOPS": {
+            "Type": "Number",
+            "Description": "The number of read IOPS the table should support.",
+            "Default": 5
+        },
+        "DynamoDBModelTableWriteIOPS": {
+            "Type": "Number",
+            "Description": "The number of write IOPS the table should support.",
+            "Default": 5
+        },
+        "AuthCognitoUserPoolId": {
+            "Type": "String",
+            "Description": "The id of an existing User Pool to connect. If this is changed, a user pool will not be created for you.",
+            "Default": "NONE"
+        },
+        "AuthCognitoUserPoolName": {
+            "Type": "String",
+            "Description": "The name of the AppSync API",
+            "Default": "AppSyncUserPool"
+        },
+        "AuthCognitoUserPoolMobileClientName": {
+            "Type": "String",
+            "Description": "The name of the native user pool client.",
+            "Default": "CognitoNativeClient"
+        },
+        "AuthCognitoUserPoolJSClientName": {
+            "Type": "String",
+            "Description": "The name of the web user pool client.",
+            "Default": "CognitoJSClient"
+        },
+        "AuthCognitoUserPoolRefreshTokenValidity": {
+            "Type": "Number",
+            "Description": "The time limit, in days, after which the refresh token is no longer valid.",
+            "Default": 30
+        },
+        "ResolverBucket": {
+            "Type": "String",
+            "Description": "The name of the bucket containing the resolver templates"
+        },
+        "ResolverRootKey": {
+            "Type": "String",
+            "Description": "The s3 key of the folder containing the resolver templates in format {Type}.{Field}.[response|request].{Timestamp}"
+        },
+        "DeploymentTimestamp": {
+            "Type": "String",
+            "Description": "The timestamp used to identify thie most recent version of the resolver templates in s3."
+        },
+        "schemaGraphql": {
+            "Type": "String",
+            "Description": "The S3 location for the Schema: schema.graphql"
+        }
+    },
+    "Resources": {
+        "GraphQLSchema": {
+            "Type": "AWS::AppSync::GraphQLSchema",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DefinitionS3Location": {
+                    "Ref": "schemaGraphql"
+                }
+            }
+        },
+        "GraphQLAPI": {
+            "Type": "AWS::AppSync::GraphQLApi",
+            "Properties": {
+                "Name": {
+                    "Ref": "AppSyncApiName"
+                },
+                "AuthenticationType": "AMAZON_COGNITO_USER_POOLS",
+                "UserPoolConfig": {
+                    "UserPoolId": {
+                        "Fn::If": [
+                            "AuthShouldCreateUserPool",
+                            {
+                                "Ref": "AuthCognitoUserPool"
+                            },
+                            {
+                                "Ref": "AuthCognitoUserPoolId"
+                            }
+                        ]
+                    },
+                    "AwsRegion": {
+                        "Ref": "AWS::Region"
+                    },
+                    "DefaultAction": "ALLOW"
+                }
+            }
+        },
+        "GraphQLAPIKey": {
+            "Type": "AWS::AppSync::ApiKey",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                }
+            }
+        },
+        "UserTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "User",
+                            {
+                                "Fn::GetAtt": [
+                                    "GraphQLAPI",
+                                    "ApiId"
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "KeySchema": [
+                    {
+                        "AttributeName": "id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "id",
+                        "AttributeType": "S"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": {
+                        "Ref": "DynamoDBModelTableReadIOPS"
+                    },
+                    "WriteCapacityUnits": {
+                        "Ref": "DynamoDBModelTableWriteIOPS"
+                    }
+                },
+                "StreamSpecification": {
+                    "StreamViewType": "NEW_AND_OLD_IMAGES"
+                }
+            }
+        },
+        "UserIAMRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "UserTable",
+                            "role",
+                            {
+                                "Fn::GetAtt": [
+                                    "GraphQLAPI",
+                                    "ApiId"
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "appsync.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "DynamoDBAccess",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "dynamodb:BatchGetItem",
+                                        "dynamodb:BatchWriteItem",
+                                        "dynamodb:PutItem",
+                                        "dynamodb:DeleteItem",
+                                        "dynamodb:GetItem",
+                                        "dynamodb:Scan",
+                                        "dynamodb:Query",
+                                        "dynamodb:UpdateItem"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "UserTable",
+                                                "Arn"
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "/",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "UserTable",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "UserDataSource": {
+            "Type": "AWS::AppSync::DataSource",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "Name": "UserTable",
+                "Type": "AMAZON_DYNAMODB",
+                "ServiceRoleArn": {
+                    "Fn::GetAtt": [
+                        "UserIAMRole",
+                        "Arn"
+                    ]
+                },
+                "DynamoDBConfig": {
+                    "AwsRegion": {
+                        "Fn::Select": [
+                            3,
+                            {
+                                "Fn::Split": [
+                                    ":",
+                                    {
+                                        "Fn::GetAtt": [
+                                            "UserTable",
+                                            "Arn"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "TableName": {
+                        "Ref": "UserTable"
+                    }
+                }
+            }
+        },
+        "GetUserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "getUser",
+                "TypeName": "Query",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "getUser",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "getUser",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "ListUserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "listUsers",
+                "TypeName": "Query",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "listUsers",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "listUsers",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "CreateUserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "createUser",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "createUser",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "createUser",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "UpdateUserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "updateUser",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "updateUser",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "updateUser",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "DeleteUserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "deleteUser",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "deleteUser",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "deleteUser",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "LocationsTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "Locations",
+                            {
+                                "Fn::GetAtt": [
+                                    "GraphQLAPI",
+                                    "ApiId"
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "KeySchema": [
+                    {
+                        "AttributeName": "id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "id",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "locationsUserId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": {
+                        "Ref": "DynamoDBModelTableReadIOPS"
+                    },
+                    "WriteCapacityUnits": {
+                        "Ref": "DynamoDBModelTableWriteIOPS"
+                    }
+                },
+                "StreamSpecification": {
+                    "StreamViewType": "NEW_AND_OLD_IMAGES"
+                },
+                "GlobalSecondaryIndexes": [
+                    {
+                        "IndexName": "gsi-UserLocations",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "locationsUserId",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        },
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": {
+                                "Ref": "DynamoDBModelTableReadIOPS"
+                            },
+                            "WriteCapacityUnits": {
+                                "Ref": "DynamoDBModelTableWriteIOPS"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "LocationsIAMRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "LocationsTable",
+                            "role",
+                            {
+                                "Fn::GetAtt": [
+                                    "GraphQLAPI",
+                                    "ApiId"
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "appsync.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "DynamoDBAccess",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "dynamodb:BatchGetItem",
+                                        "dynamodb:BatchWriteItem",
+                                        "dynamodb:PutItem",
+                                        "dynamodb:DeleteItem",
+                                        "dynamodb:GetItem",
+                                        "dynamodb:Scan",
+                                        "dynamodb:Query",
+                                        "dynamodb:UpdateItem"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "LocationsTable",
+                                                "Arn"
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "/",
+                                                [
+                                                    {
+                                                        "Fn::GetAtt": [
+                                                            "LocationsTable",
+                                                            "Arn"
+                                                        ]
+                                                    },
+                                                    "*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "LocationsDataSource": {
+            "Type": "AWS::AppSync::DataSource",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "Name": "LocationsTable",
+                "Type": "AMAZON_DYNAMODB",
+                "ServiceRoleArn": {
+                    "Fn::GetAtt": [
+                        "LocationsIAMRole",
+                        "Arn"
+                    ]
+                },
+                "DynamoDBConfig": {
+                    "AwsRegion": {
+                        "Fn::Select": [
+                            3,
+                            {
+                                "Fn::Split": [
+                                    ":",
+                                    {
+                                        "Fn::GetAtt": [
+                                            "LocationsTable",
+                                            "Arn"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "TableName": {
+                        "Ref": "LocationsTable"
+                    }
+                }
+            }
+        },
+        "GetLocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "getLocations",
+                "TypeName": "Query",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "getLocations",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "getLocations",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "ListLocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "listLocationss",
+                "TypeName": "Query",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "listLocationss",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Query",
+                                                    "listLocationss",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "CreateLocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "createLocations",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "createLocations",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "createLocations",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "UpdateLocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "updateLocations",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "updateLocations",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "updateLocations",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "DeleteLocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "deleteLocations",
+                "TypeName": "Mutation",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "deleteLocations",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Mutation",
+                                                    "deleteLocations",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "UserlocationsResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "LocationsDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "locations",
+                "TypeName": "User",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "User",
+                                                    "locations",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "User",
+                                                    "locations",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "LocationsuserResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "Properties": {
+                "ApiId": {
+                    "Fn::GetAtt": [
+                        "GraphQLAPI",
+                        "ApiId"
+                    ]
+                },
+                "DataSourceName": {
+                    "Fn::GetAtt": [
+                        "UserDataSource",
+                        "Name"
+                    ]
+                },
+                "FieldName": "user",
+                "TypeName": "Locations",
+                "RequestMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Locations",
+                                                    "user",
+                                                    "request",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                },
+                "ResponseMappingTemplateS3Location": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "s3://",
+                            {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Ref": "ResolverBucket"
+                                        },
+                                        {
+                                            "Ref": "ResolverRootKey"
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                ".",
+                                                [
+                                                    "Locations",
+                                                    "user",
+                                                    "response",
+                                                    {
+                                                        "Ref": "DeploymentTimestamp"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            },
+            "DependsOn": "GraphQLSchema"
+        },
+        "AuthCognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+                "AliasAttributes": [
+                    "email"
+                ],
+                "UserPoolName": {
+                    "Ref": "AuthCognitoUserPoolName"
+                },
+                "Policies": {
+                    "PasswordPolicy": {
+                        "MinimumLength": 8,
+                        "RequireLowercase": true,
+                        "RequireNumbers": true,
+                        "RequireSymbols": true,
+                        "RequireUppercase": true
+                    }
+                },
+                "AutoVerifiedAttributes": [
+                    "email"
+                ]
+            },
+            "Condition": "AuthShouldCreateUserPool"
+        },
+        "AuthCognitoUserPoolNativeClient": {
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Properties": {
+                "ClientName": {
+                    "Ref": "AuthCognitoUserPoolMobileClientName"
+                },
+                "UserPoolId": {
+                    "Fn::If": [
+                        "AuthShouldCreateUserPool",
+                        {
+                            "Ref": "AuthCognitoUserPool"
+                        },
+                        {
+                            "Ref": "AuthCognitoUserPoolId"
+                        }
+                    ]
+                },
+                "GenerateSecret": true,
+                "RefreshTokenValidity": {
+                    "Ref": "AuthCognitoUserPoolRefreshTokenValidity"
+                },
+                "ReadAttributes": [],
+                "WriteAttributes": []
+            },
+            "Condition": "AuthShouldCreateUserPool"
+        },
+        "AuthCognitoUserPoolJSClient": {
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Properties": {
+                "ClientName": {
+                    "Ref": "AuthCognitoUserPoolJSClientName"
+                },
+                "UserPoolId": {
+                    "Fn::If": [
+                        "AuthShouldCreateUserPool",
+                        {
+                            "Ref": "AuthCognitoUserPool"
+                        },
+                        {
+                            "Ref": "AuthCognitoUserPoolId"
+                        }
+                    ]
+                },
+                "GenerateSecret": false,
+                "RefreshTokenValidity": {
+                    "Ref": "AuthCognitoUserPoolRefreshTokenValidity"
+                },
+                "ReadAttributes": [],
+                "WriteAttributes": []
+            },
+            "Condition": "AuthShouldCreateUserPool"
+        }
+    },
+    "Outputs": {
+        "GraphQLAPIIdOutput": {
+            "Description": "Your GraphQL API ID.",
+            "Value": {
+                "Fn::GetAtt": [
+                    "GraphQLAPI",
+                    "ApiId"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "GraphQLApiId"
+                        ]
+                    ]
+                }
+            }
+        },
+        "GraphQLAPIEndpointOutput": {
+            "Description": "Your GraphQL API endpoint.",
+            "Value": {
+                "Fn::GetAtt": [
+                    "GraphQLAPI",
+                    "GraphQLUrl"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "GraphQLApiEndpoint"
+                        ]
+                    ]
+                }
+            }
+        },
+        "GraphQLAPIKeyOutput": {
+            "Description": "Your GraphQL API key. Provide via 'x-api-key' header.",
+            "Value": {
+                "Fn::GetAtt": [
+                    "GraphQLAPIKey",
+                    "ApiKey"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "GraphQLApiKey"
+                        ]
+                    ]
+                }
+            }
+        },
+        "AuthCognitoUserPoolNativeClientId": {
+            "Description": "Amazon Cognito UserPools native client ID",
+            "Value": {
+                "Fn::If": [
+                    "AuthShouldCreateUserPool",
+                    {
+                        "Ref": "AuthCognitoUserPoolNativeClient"
+                    },
+                    {
+                        "Fn::Join": [
+                            " ",
+                            [
+                                "See UserPool:",
+                                {
+                                    "Ref": "AuthCognitoUserPoolId"
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "CognitoNativeClient"
+                        ]
+                    ]
+                }
+            }
+        },
+        "AuthCognitoUserPoolJSClientId": {
+            "Description": "Amazon Cognito UserPools JS client ID",
+            "Value": {
+                "Fn::If": [
+                    "AuthShouldCreateUserPool",
+                    {
+                        "Ref": "AuthCognitoUserPoolJSClient"
+                    },
+                    {
+                        "Fn::Join": [
+                            " ",
+                            [
+                                "See UserPool:",
+                                {
+                                    "Ref": "AuthCognitoUserPoolId"
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "CognitoJSClient"
+                        ]
+                    ]
+                }
+            }
+        },
+        "AuthCognitoUserPoolIdOutput": {
+            "Description": "Amazon Cognito UserPool id",
+            "Value": {
+                "Fn::If": [
+                    "AuthShouldCreateUserPool",
+                    {
+                        "Ref": "AuthCognitoUserPool"
+                    },
+                    {
+                        "Ref": "AuthCognitoUserPoolId"
+                    }
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        ":",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "CognitoUserPoolId"
+                        ]
+                    ]
+                }
+            }
+        }
+    },
+    "Conditions": {
+        "AuthShouldCreateUserPool": {
+            "Fn::Equals": [
+                {
+                    "Ref": "AuthCognitoUserPoolId"
+                },
+                "NONE"
+            ]
+        }
+    }
+}

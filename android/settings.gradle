@@ -1,0 +1,20 @@
+rootProject.name = 'viroignite'
+include ':react-native-maps'
+project(':react-native-maps').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-maps/lib/android')
+include ':react-native-aws-cognito-js'
+project(':react-native-aws-cognito-js').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-aws-cognito-js/android')
+include ':react-native-maps'
+project(':react-native-maps').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-maps/lib/android')
+include ':react-native-config'
+project(':react-native-config').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-config/android')
+include ':react-native-vector-icons'
+project(':react-native-vector-icons').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vector-icons/android')
+include ':react-native-device-info'
+project(':react-native-device-info').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-device-info/android')
+
+include ':app'
+include ':react_viro', ':arcore_client', ':gvr_common', ':viro_renderer'
+project(':arcore_client').projectDir = new File('../node_modules/react-viro/android/arcore_client')
+project(':gvr_common').projectDir = new File('../node_modules/react-viro/android/gvr_common')
+project(':viro_renderer').projectDir = new File('../node_modules/react-viro/android/viro_renderer')
+project(':react_viro').projectDir = new File('../node_modules/react-viro/android/react_viro')
