@@ -12,7 +12,6 @@ import styles from './Styles/LaunchScreenStyles'
 /*
  TODO: Insert your API key below
  */
-console.log(Secrets.VIRO)
 var sharedProps = {
   apiKey: Secrets.VIRO
 }
@@ -25,6 +24,7 @@ var defaultNavigatorType = UNSET
 export default class LaunchScreen extends Component {
   constructor (props) {
     super(props)
+
     this.state = {
       navigatorType: defaultNavigatorType,
       sharedProps: sharedProps

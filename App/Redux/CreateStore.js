@@ -4,6 +4,7 @@ import ReduxPersist from '../Config/ReduxPersist'
 import Config from '../Config/DebugConfig'
 import createSagaMiddleware from 'redux-saga'
 import ScreenTracking from './ScreenTrackingMiddleware'
+// import thunk from 'redux-thunk'
 import { createReactNavigationReduxMiddleware } from 'react-navigation-redux-helpers'
 
 // creates the store
@@ -22,6 +23,7 @@ export default (rootReducer, rootSaga) => {
 
   /* ------------- Analytics Middleware ------------- */
   middleware.push(ScreenTracking)
+  // middleware.push(thunk)
 
   /* ------------- Saga Middleware ------------- */
 
