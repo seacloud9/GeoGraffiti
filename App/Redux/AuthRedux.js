@@ -41,6 +41,7 @@ export const INITIAL_STATE = Immutable({
   showSignInConfirmationModal: false,
   confirmSignUpError: false,
   confirmLoginError: false,
+  hasAuthenticated: false,
   signInErrorMessage: '',
   signUpErrorMessage: '',
   confirmLoginErrorMessage: '',
@@ -66,7 +67,7 @@ export const success = (state, {data}) => {
 }
 
 export const confirmSignupSuccess = (state, action) => {
-  return state.merge({ fetching: false, error: null })
+  return state.merge({ fetching: false, error: null, hasAuthenticated: true })
 }
 
 export const showSignUpConfirmationModal = (state, action) => {

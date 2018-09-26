@@ -3,7 +3,7 @@ import { View, StatusBar } from 'react-native'
 import { Auth } from 'aws-amplify'
 import ReduxNavigation from '../Navigation/ReduxNavigation'
 import { connect } from 'react-redux'
-import ReduxPersist from '../Config/ReduxPersist'
+// import ReduxPersist from '../Config/ReduxPersist'
 import Tabs from '../Auth/Tabs'
 
 // Styles
@@ -14,7 +14,8 @@ class RootContainer extends Component {
     super(props)
     this.state = {
       user: {},
-      isLoading: true
+      isLoading: true,
+      auth: props.auth
     }
   }
 
@@ -30,16 +31,16 @@ class RootContainer extends Component {
   async componentWillReceiveProps (nextProps) {
     try {
       const user = await Auth.currentAuthenticatedUser()
-      this.setState({ user })
+      this.setState({ user, ...nextProps })
     } catch (err) {
-      this.setState({ user: {} })
+      this.setState({ user: {}, ...nextProps })
     }
   }
 
   render () {
     if (this.state.isLoading) return null
     let loggedIn = false
-    if (this.state.user.username) {
+    if (this.state.user.username || this.state.auth) {
       loggedIn = true
     }
     if (loggedIn) {
@@ -57,7 +58,7 @@ class RootContainer extends Component {
 }
 
 const mapStateToProps = state => ({
-  auth: state.auth
+  auth: state.auth.hasAuthenticated
 })
 
 export default connect(mapStateToProps)(RootContainer)

@@ -31,34 +31,6 @@ class App extends Component {
     this.setState({ authCode })
   }
 
-  signUp = () => {
-    Auth.signUp({ // 3
-      username: 'myCoolUsername',
-      password: 'MyCoolP@ssword2!',
-      attributes: {
-        phone_number: '+15555555555',
-        email: 'yourcoolemail@gmail.com'
-      }
-    })
-    .then(res => {
-      console.log('successful signup: ', res)
-    })
-    .catch(err => {
-      console.log('error signing up: ', err)
-    })
-  }
-
-  confirmUser = () => { // 4
-    const { authCode } = this.state
-    Auth.confirmSignUp('myCoolUsername', authCode)
-      .then(res => {
-        console.log('successful confirmation: ', res)
-      })
-      .catch(err => {
-        console.log('error confirming user: ', err)
-      })
-  }
-
   render () {
     return (
       <Provider store={store}>
