@@ -3,4 +3,9 @@ target 'viroignite' do
   use_frameworks!
   pod 'ViroReact', :path => '../node_modules/react-viro/ios/'
   pod 'ViroKit', :path => '../node_modules/react-viro/ios/dist/ViroRenderer/'
+  pod 'EXReactNativeAdapter', path: '../node_modules/expo-react-native-adapter/ios', inhibit_warnings: true
+  pod 'EXCore', path: '../node_modules/expo-core/ios'
+  pod 'EXLocation', path: '../node_modules/expo-location/ios'
+  pod 'EXPermissions', path: '../node_modules/expo-permissions/ios'
+  pod 'EXPermissionsInterface', path: '../node_modules/expo-permissions-interface/ios'
 end

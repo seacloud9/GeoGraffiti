@@ -7,7 +7,7 @@ import {
 import GeoGraffiti from '../Xr/GeoGraffiti'
 
 // Styles
-import styles from './Styles/LaunchScreenStyles'
+import styles from './Styles/GraffitiScreenStyles'
 // var GeoGraffiti = require('../Xr/GeoGraffiti')
 /*
  TODO: Insert your API key below
@@ -21,7 +21,7 @@ var AR_NAVIGATOR_TYPE = 'AR'
 // This determines which type of experience to launch in, or UNSET, if the user should
 // be presented with a choice of AR or VR. By default, we offer the user a choice.
 var defaultNavigatorType = UNSET
-export default class LaunchScreen extends Component {
+export default class GraffitiScreen extends Component {
   constructor (props) {
     super(props)
 

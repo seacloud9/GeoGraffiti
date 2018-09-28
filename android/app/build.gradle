@@ -101,7 +101,7 @@ android {
     defaultConfig {
         applicationId "com.viroignite"
         minSdkVersion 23
-        targetSdkVersion 25
+        targetSdkVersion 26
         multiDexEnabled true
         versionCode 1
         versionName "1.0"
@@ -166,7 +166,7 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:25.0.0'
+    compile 'com.android.support:appcompat-v7:26.1.0'
     compile 'com.facebook.react:react-native:+'
     compile project(':arcore_client') // remove this if AR not required
     compile project(':gvr_common')
@@ -184,12 +184,27 @@ dependencies {
     compile project(':react-native-maps')
     compile project(':react-native-aws-cognito-js')
     compile project(':react-native-config')
+    compile project(':expo-image-loader-interface')
+    implementation(project(':expo-location')){
+        exclude group: 'com.google.android.gms', module: 'play-services-base'
+        exclude group: 'com.google.android.gms', module: 'play-services-maps'
+        exclude group: 'com.google.android.gms', module: 'play-services-location'
+        transitive = true;
+    }
+    compile project(':expo-font-interface')
+    compile project(':expo-react-native-adapter')
+    compile project(':expo-core')
+    compile project(':expo-permissions')
+    compile project(':expo-permissions-interface')
     implementation(project(':react-native-maps')){
         exclude group: 'com.google.android.gms', module: 'play-services-base'
         exclude group: 'com.google.android.gms', module: 'play-services-maps'
+        exclude group: 'com.google.android.gms', module: 'play-services-location'
+        transitive = true;
     }
     implementation 'com.google.android.gms:play-services-base:+'
     implementation 'com.google.android.gms:play-services-maps:+'
+    implementation 'com.google.android.gms:play-services-location:+'
 
 }
 
