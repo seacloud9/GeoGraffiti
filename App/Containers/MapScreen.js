@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { View, Text } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { connect } from 'react-redux'
 import MapView from 'react-native-maps'
 import { Location } from 'expo-location'
@@ -10,19 +10,17 @@ import styles from './Styles/MapScreenStyle'
 class MapScreen extends Component {
   state = {
     location: null,
-    errorMessage: null
+    errorMessage: null,
+    region: null
   }
 
   async componentDidMount () {
     try {
       const status = await Permissions.askAsync(Permissions.LOCATION)
-      console.log('status', status)
       if (status.status !== 'granted') {
         throw new Error('No permission!')
       }
-
       const location = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
-      console.log('result', location)
       this.setState({ location: location.coords })
     } catch (e) {
       console.log('error', e)
@@ -45,16 +43,28 @@ class MapScreen extends Component {
     }
   }
 
+  onRegionChange (region) {
+    this.setState({ region })
+  }
+
   renderMap () {
     if (this.state.location) {
-      console.log(this.state.location)
       return (
         <MapView
-          style={styles.map}
+          style={{
+            ...StyleSheet.absoluteFillObject
+          }}
+          initialRegion={{
+            latitude: 37.78825,
+            longitude: -122.4324,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421
+          }}
+          showsUserLocation
           region={{
             latitude: this.state.location.latitude,
             longitude: this.state.location.longitude,
-            latitudeDelta: 0.015,
+            latitudeDelta: 0.0922,
             longitudeDelta: 0.0121
           }}
           />
@@ -70,7 +80,7 @@ class MapScreen extends Component {
 
   render () {
     return (
-      <View style={styles.container}>
+      <View style={styles.mapContainer}>
         {
           this.renderMap()
         }
