@@ -1,10 +1,9 @@
 import React, { Component } from 'react'
-import { View, StatusBar } from 'react-native'
+import { View, StatusBar, ActivityIndicator } from 'react-native'
 import { Auth } from 'aws-amplify'
-import ReduxNavigation from '../Navigation/ReduxNavigation'
+import { Colors } from '../Themes'
 import { connect } from 'react-redux'
 // import ReduxPersist from '../Config/ReduxPersist'
-import Tabs from '../Auth/Tabs'
 
 // Styles
 import styles from './Styles/RootContainerStyles'
@@ -24,8 +23,10 @@ class RootContainer extends Component {
     try {
       const user = await Auth.currentAuthenticatedUser()
       this.setState({ user, isLoading: false })
+      this.props.navigation.navigate('App')
     } catch (err) {
       this.setState({ isLoading: false })
+      this.props.navigation.navigate('Auth')
     }
   }
   async componentWillReceiveProps (nextProps) {
@@ -38,21 +39,11 @@ class RootContainer extends Component {
   }
 
   render () {
-    if (this.state.isLoading) return null
-    let loggedIn = false
-    if (this.state.user.username || this.state.auth) {
-      loggedIn = true
-    }
-    if (loggedIn) {
-      return (
-        <View style={styles.applicationView}>
-          <StatusBar barStyle='light-content' />
-          <ReduxNavigation />
-        </View>
-      )
-    }
     return (
-      <Tabs />
+      <View style={styles.container}>
+        <ActivityIndicator color={Colors.primary} />
+        <StatusBar barStyle='default' />
+      </View>
     )
   }
 }

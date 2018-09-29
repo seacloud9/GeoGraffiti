@@ -24,7 +24,6 @@ var defaultNavigatorType = UNSET
 export default class GraffitiScreen extends Component {
   constructor (props) {
     super(props)
-
     this.state = {
       navigatorType: defaultNavigatorType,
       sharedProps: sharedProps
@@ -86,7 +85,7 @@ export default class GraffitiScreen extends Component {
     return (
       <View style={styles.mainContainer}>
         {
-          this.renderAROptions()
+         this._getARNavigator()
         }
       </View>
     )

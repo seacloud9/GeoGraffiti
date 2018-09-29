@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native'
 import { connect } from 'react-redux'
 import MapView from 'react-native-maps'
 import { Location } from 'expo-location'
+import { Button } from 'react-native-elements'
+import Icon from 'react-native-vector-icons/FontAwesome'
 import { Permissions } from 'expo-permissions'
 // Styles
 import styles from './Styles/MapScreenStyle'
@@ -50,24 +52,39 @@ class MapScreen extends Component {
   renderMap () {
     if (this.state.location) {
       return (
-        <MapView
-          style={{
-            ...StyleSheet.absoluteFillObject
-          }}
-          initialRegion={{
-            latitude: 37.78825,
-            longitude: -122.4324,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421
-          }}
-          showsUserLocation
-          region={{
-            latitude: this.state.location.latitude,
-            longitude: this.state.location.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0121
-          }}
+        <View style={{flex: 1, width: '100%', justifyContent: 'flex-end'}}>
+          <MapView
+            style={{
+              ...StyleSheet.absoluteFillObject
+            }}
+            initialRegion={{
+              latitude: 37.78825,
+              longitude: -122.4324,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421
+            }}
+            showsUserLocation
+            region={{
+              latitude: this.state.location.latitude,
+              longitude: this.state.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0121
+            }}
           />
+          <Button
+            buttonStyle={{opacity: 0.6, backgroundColor: '#104aa8', borderWidth: 1, borderColor: '#ffffff', borderRadius: 10, marginBottom: 20}}
+            leftIcon={{
+              color: 'white',
+              name: 'spray',
+              type: 'material-community',
+              size: 18
+            }}
+            onPress={() => {
+              console.log(this.props.navigation)
+              this.props.navigation.navigate('GraffitiScreen')
+            }}
+            title='Grafitti' />
+        </View>
       )
     } else {
       return (

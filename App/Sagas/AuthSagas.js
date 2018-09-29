@@ -9,7 +9,7 @@
 *  - This template uses the api declared in sagas/index.js, so
 *    you'll need to define a constant in that file.
 *************************************************************/
-import { Alert } from 'react-native'
+import { NavigationActions } from 'react-navigation'
 import { put } from 'redux-saga/effects'
 import AuthActions from '../Redux/AuthRedux'
 import { Auth } from 'aws-amplify'
@@ -41,9 +41,9 @@ export function * confirmUserSignUp ({data}) {
   console.log(response)
   if (response === 'SUCCESS') {
     yield put(AuthActions.confirmSignupSuccess(response))
-    setTimeout(() => {
-      Alert.alert('Successfully Signed Up!', 'Please Sign')
-    }, 0)
+    yield put(NavigationActions.navigate({
+      routeName: 'App'
+    }))
   } else {
     console.log('error confirmUserSignUp in: ', response)
     yield put(AuthActions.confirmSignupFailure(response))

@@ -1,33 +1,19 @@
 import React from 'react'
-import { BackHandler, Platform } from 'react-native'
-import { addNavigationHelpers } from 'react-navigation'
-import { createReduxBoundAddListener } from 'react-navigation-redux-helpers'
 import { connect } from 'react-redux'
+import { createReduxBoundAddListener } from 'react-navigation-redux-helpers'
 import AppNavigation from './AppNavigation'
 
-class ReduxNavigation extends React.Component {
-  componentWillMount () {
-    if (Platform.OS === 'ios') return
-    BackHandler.addEventListener('hardwareBackPress', () => {
-      const { dispatch, nav } = this.props
-      // change to whatever is your first screen, otherwise unpredictable results may occur
-      if (nav.routes.length === 1 && (nav.routes[0].routeName === 'GraffitiScreen')) {
-        return false
-      }
-      // if (shouldCloseApp(nav)) return false
-      dispatch({ type: 'Navigation/BACK' })
-      return true
-    })
+// here is our redux-aware smart component
+function ReduxNavigation (props) {
+  const addListener = createReduxBoundAddListener('root')
+  const { dispatch, nav } = props
+  const navigation = {
+    dispatch,
+    state: nav,
+    addListener
   }
 
-  componentWillUnmount () {
-    if (Platform.OS === 'ios') return
-    BackHandler.removeEventListener('hardwareBackPress')
-  }
-
-  render () {
-    return <AppNavigation navigation={addNavigationHelpers({ dispatch: this.props.dispatch, state: this.props.nav, addListener: createReduxBoundAddListener('root') })} />
-  }
+  return <AppNavigation navigation={navigation} />
 }
 
 const mapStateToProps = state => ({ nav: state.nav })

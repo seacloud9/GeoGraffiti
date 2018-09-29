@@ -1,6 +1,6 @@
 import React from 'react'
 import { Image, StyleSheet } from 'react-native'
-import { TabNavigator } from 'react-navigation'
+import { createBottomTabNavigator } from 'react-navigation'
 
 import { Colors, Fonts } from '../Themes'
 import SignIn from './SignIn'
@@ -41,7 +41,6 @@ const routes = {
 }
 
 const routeConfig = {
-  tabBarPosition: 'bottom',
   tabBarOptions: {
     showLabel: true,
     activeTintColor: Colors.primary,
@@ -59,4 +58,4 @@ const routeConfig = {
   }
 }
 
-export default TabNavigator(routes, routeConfig)
+export default createBottomTabNavigator(routes, routeConfig)

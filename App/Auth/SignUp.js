@@ -114,10 +114,18 @@ class SignUp extends Component {
         {
           showSignUpConfirmationModal && (
             <Modal
-              visible={this.state.showSignUpConfirmationModal}
+              visible={(this.state.showSignUpConfirmationModal && !this.state.hasAuthed)}
               onRequestClose={() => {}}>
               <View style={styles.modal}>
                 <Input
+                  style={{height: 45,
+                    width: 150,
+                    marginBottom: 15,
+                    borderBottomWidth: 1.5,
+                    fontSize: 16,
+                    borderBottomColor: '#FF1493',
+                    fontFamily: 'Lato-Light'
+                  }}
                   placeholder='Authorization Code'
                   type='authCode'
                   keyboardType='numeric'
@@ -139,6 +147,7 @@ class SignUp extends Component {
 }
 
 const mapStateToProps = state => ({
+  hasAuthed: state.auth.hasAuthenticated,
   user: state.auth.user,
   auth: state.auth
 })

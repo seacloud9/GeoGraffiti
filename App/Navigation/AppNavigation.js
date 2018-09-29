@@ -1,11 +1,13 @@
-import { StackNavigator } from 'react-navigation'
+import { createStackNavigator, createSwitchNavigator } from 'react-navigation'
 import GraffitiScreen from '../Containers/GraffitiScreen'
 import MapScreen from '../Containers/MapScreen'
+import RootContainer from '../Containers/RootContainer'
+import Tabs from '../Auth/Tabs'
 
 import styles from './Styles/NavigationStyles'
 
 // Manifest of possible screens
-const PrimaryNav = StackNavigator({
+export const PrimaryNav = createStackNavigator({
   MapScreen: { screen: MapScreen },
   GraffitiScreen: { screen: GraffitiScreen }
 }, {
@@ -17,4 +19,13 @@ const PrimaryNav = StackNavigator({
   }
 })
 
-export default PrimaryNav
+export default createSwitchNavigator(
+  {
+    AuthLoading: RootContainer,
+    App: PrimaryNav,
+    Auth: Tabs
+  },
+  {
+    initialRouteName: 'AuthLoading'
+  }
+)

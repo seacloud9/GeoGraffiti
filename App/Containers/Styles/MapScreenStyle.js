@@ -5,10 +5,8 @@ const { width, height } = Dimensions.get('window')
 
 export default StyleSheet.create({
   ...ApplicationStyles.screen,
-  mapContainer:{
-    ...StyleSheet.absoluteFillObject,
-    height: height,
-    width: width,
+  mapContainer: {
+    flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center'
   }

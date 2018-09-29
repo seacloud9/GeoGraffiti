@@ -1,16 +1,17 @@
 
 import '../Config'
 import DebugConfig from '../Config/DebugConfig'
-import Amplify, { Auth } from 'aws-amplify'
+import Amplify from 'aws-amplify'
+import ReduxPersist from '../Config/ReduxPersist'
 import React, { Component } from 'react'
 import { Provider } from 'react-redux'
-import RootContainer from './RootContainer'
+import ReduxNavigation, {appReducer} from '../Navigation/ReduxNavigation'
 import createStore from '../Redux'
 import config from '../aws-exports'
 
 Amplify.configure(config)
 // create our store
-const store = createStore()
+const store = createStore(appReducer)
 
 /**
  * Provides an entry point into our application.  Both index.ios.js and index.android.js
@@ -31,10 +32,19 @@ class App extends Component {
     this.setState({ authCode })
   }
 
+  renderNav () {
+    if (!ReduxPersist.active) {
+      return (
+        <ReduxNavigation />
+      )
+    } else {
+      return null
+    }
+  }
   render () {
     return (
       <Provider store={store}>
-        <RootContainer />
+        <ReduxNavigation />
       </Provider>
     )
   }
