@@ -9,7 +9,7 @@ import {
 
 import { connect } from 'react-redux'
 
-import { authenticate, confirmUserLogin } from '../Redux/AuthRedux'
+import AuthActions from '../Redux/AuthRedux'
 import { Fonts } from '../Themes'
 
 import Input from '../Components/Input'
@@ -38,7 +38,18 @@ class SignIn extends Component {
 
   confirm = () => {
     const { authCode } = this.state
-    this.props.dispatchConfirmUserLogin(authCode)
+    this.props.dispatchConfirmUserLogin(this.state.user, authCode)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    const {auth: { showSignInConfirmationModal}} = nextProps
+    if (!showSignInConfirmationModal && this.props.auth.showSignInConfirmationModal && !nextProps.user) {
+      // this.setState(initialState)
+    }
+
+    if (nextProps.user) {
+      this.setState(nextProps)
+    }
   }
 
   render () {
@@ -111,13 +122,16 @@ class SignIn extends Component {
   }
 }
 
-const mapDispatchToProps = {
-  dispatchConfirmUserLogin: authCode => confirmUserLogin(authCode),
-  dispatchAuthenticate: (username, password) => authenticate(username, password)
+const mapDispatchToProps = (dispatch) => {
+  return {
+    dispatchConfirmUserLogin: (user, authCode) => dispatch(AuthActions.confirmLogin({user, authCode})),
+    dispatchAuthenticate: (username, password) => dispatch(AuthActions.logIn({username, password}))
+  }
 }
 
 const mapStateToProps = state => ({
-  auth: state.auth
+  auth: state.auth,
+  user: state.auth.user
 })
 
 export default connect(mapStateToProps, mapDispatchToProps)(SignIn)

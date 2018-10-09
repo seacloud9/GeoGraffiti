@@ -9,7 +9,7 @@ const { Types, Creators } = createActions({
   authFailure: null,
   signUp: ['data'],
   logIn: ['data'],
-  logInSuccess: ['user'],
+  logInSuccess: ['data'],
   logInFailure: ['err'],
   logOut: null,
   signUpSuccess: ['data'],
@@ -20,7 +20,7 @@ const { Types, Creators } = createActions({
   confirmSignupSuccess: ['data'],
   confirmSignupFailure: ['err'],
   confirmLogin: ['data'],
-  confirmLoginSuccess: ['user'],
+  confirmLoginSuccess: ['data'],
   confirmLoginFailure: null
 })
 
@@ -61,13 +61,11 @@ export const request = (state, { data }) => state.merge({ fetching: true, data, 
 // successful api lookup
 export const success = (state, {data}) => {
   const { user } = data
-  console.log('success')
-  console.log(user)
   return state.merge({ fetching: false, error: null, user: user })
 }
 
 export const confirmSignupSuccess = (state, action) => {
-  return state.merge({ fetching: false, error: null, hasAuthenticated: true })
+  return state.merge({ fetching: false, error: null, hasAuthenticated: true, isAuthenticating: false })
 }
 
 export const showSignUpConfirmationModal = (state, action) => {
@@ -82,57 +80,6 @@ export const failure = (state, action) => {
   const { err } = action
   return state.merge({ fetching: false, error: true, err })
 }
-/*
-export const confirmUserLogin = (authCode) => {
-  return (dispatch, getState) => {
-    dispatch({type: 'Auth/CONFIRM_LOG_IN'})
-    const {auth: { user }} = getState()
-    console.log('state: ', getState())
-    Auth.confirmSignIn(user, authCode)
-      .then(data => {
-        console.log('data from confirmLogin: ', data)
-        dispatch({type: 'Auth/CONFIRM_LOGIN_SUCCESS', user: data})
-      })
-      .catch(err => {
-        console.log('error signing in: ', err)
-        dispatch({type: 'Auth/CONFIRM_LOGIN_FAILURE', err: err})
-      })
-  }
-}
-
-export const confirmUserSignUp = (username, authCode) => {
-  return (dispatch) => {
-    dispatch({type: 'Auth/CONFIRM_SIGN_UP'})
-    Auth.confirmSignUp(username, authCode)
-      .then(data => {
-        console.log('data from confirmSignUp: ', data)
-        dispatch({type: 'Auth/CONFIRM_SIGN_UP_SUCCESS', user: data})
-        setTimeout(() => {
-          Alert.alert('Successfully Signed Up!', 'Please Sign')
-        }, 0)
-      })
-      .catch(err => {
-        console.log('error signing up: ', err)
-        dispatch({type: 'Auth/CONFIRM_SIGN_UP_FAILURE', err: err})
-      })
-  }
-}
-
-export const authenticate = (username, password) => {
-  return (dispatch) => {
-    dispatch({type: 'Auth/LOG_IN'})
-    Auth.signIn(username, password)
-      .then(user => {
-        dispatch({type: 'Auth/LOG_IN_SUCCESS', user: user})
-        dispatch({type: 'Auth/SHOW_SIGN_IN_CONFIRMATION_MODAL'})
-      })
-      .catch(err => {
-        console.log('errror from signIn: ', err)
-        dispatch({type: 'Auth/LOG_IN_FAILURE', err: err})
-      })
-  }
-}
-*/
 
 export const reducer = createReducer(INITIAL_STATE, {
   [Types.AUTH_REQUEST]: request,

@@ -1,7 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { createReduxBoundAddListener } from 'react-navigation-redux-helpers'
-import AppNavigation from './AppNavigation'
+import {PrimaryNav} from './AppNavigation'
 
 // here is our redux-aware smart component
 function ReduxNavigation (props) {
@@ -13,7 +13,7 @@ function ReduxNavigation (props) {
     addListener
   }
 
-  return <AppNavigation navigation={navigation} />
+  return <PrimaryNav navigation={navigation} />
 }
 
 const mapStateToProps = state => ({ nav: state.nav })

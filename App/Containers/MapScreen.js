@@ -80,7 +80,6 @@ class MapScreen extends Component {
               size: 18
             }}
             onPress={() => {
-              console.log(this.props.navigation)
               this.props.navigation.navigate('GraffitiScreen')
             }}
             title='Grafitti' />

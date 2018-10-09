@@ -41,15 +41,17 @@ class SignUp extends Component {
   }
 
   confirm = () => {
-    const { authCode, username } = this.state
-    this.props.dispatchConfirmUser(username, authCode)
+    const { authCode } = this.state
+    this.props.dispatchConfirmUser(this.state.user.username, authCode)
   }
 
   componentWillReceiveProps (nextProps) {
-    const {auth: { showSignUpConfirmationModal }} = nextProps
-    if (!showSignUpConfirmationModal && this.props.auth.showSignUpConfirmationModal) {
+    const {auth: { showSignUpConfirmationModal}} = nextProps
+    if (!showSignUpConfirmationModal && this.props.auth.showSignUpConfirmationModal && !nextProps.user) {
       this.setState(initialState)
-    } else {
+    }
+
+    if (nextProps.user) {
       this.setState(nextProps)
     }
   }
@@ -114,7 +116,7 @@ class SignUp extends Component {
         {
           showSignUpConfirmationModal && (
             <Modal
-              visible={(this.state.showSignUpConfirmationModal && !this.state.hasAuthed)}
+              visible={(this.state.showSignUpConfirmationModal || !this.state.hasAuthed)}
               onRequestClose={() => {}}>
               <View style={styles.modal}>
                 <Input

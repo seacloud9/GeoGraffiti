@@ -31,11 +31,9 @@ export default class GeoGraffiti extends Component {
     this._onInitialized = this._onInitialized.bind(this)
     this._latLongToMerc = this._latLongToMerc.bind(this)
     this._transformPointToAR = this._transformPointToAR.bind(this)
-    console.log('constructor meh..')
   }
 
   render () {
-    console.log(this.state)
     return (
       <ViroARScene onTrackingUpdated={this._onInitialized} >
         <ViroText text={this.state.text} scale={[0.2, 2, 0.2]} position={[0, -2, -5]} style={styles.helloWorldTextStyle} />
@@ -48,8 +46,6 @@ export default class GeoGraffiti extends Component {
   }
 
   _onInitialized (state, reason) {
-    console.log(state)
-    console.log('_onInitialized')
     if (state === ViroConstants.TRACKING_NORMAL) {
       // hard coded location for now
       var northPoint = this._transformPointToAR(47.618574, -122.338475)

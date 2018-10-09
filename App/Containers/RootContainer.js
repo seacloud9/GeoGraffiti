@@ -1,8 +1,10 @@
 import React, { Component } from 'react'
 import { View, StatusBar, ActivityIndicator } from 'react-native'
+import { NavigationActions } from 'react-navigation'
 import { Auth } from 'aws-amplify'
 import { Colors } from '../Themes'
 import { connect } from 'react-redux'
+
 // import ReduxPersist from '../Config/ReduxPersist'
 
 // Styles
@@ -12,30 +14,43 @@ class RootContainer extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      user: {},
+      user: props.user,
       isLoading: true,
-      auth: props.auth
+      auth: props.auth,
+      nav: props.nav
     }
   }
 
-  async componentDidMount () {
-    StatusBar.setHidden(true)
+  signInUser = async (nextProps) => {
     try {
       const user = await Auth.currentAuthenticatedUser()
-      this.setState({ user, isLoading: false })
-      this.props.navigation.navigate('App')
+      this.setState((nextProps ? {user, isLoading: false, ...nextProps} : { user, isLoading: false }))
+      const navigateAction = NavigationActions.navigate({
+        routeName: 'LoggedInStack'
+      })
+      this.props.navigation.dispatch(navigateAction)
     } catch (err) {
-      this.setState({ isLoading: false })
-      this.props.navigation.navigate('Auth')
+      console.log(err)
+      nextProps ? this.setState({ isLoading: false }, () => {
+        console.log(this.state)
+      }) : this.redirectUserToSignIn()
     }
   }
-  async componentWillReceiveProps (nextProps) {
-    try {
-      const user = await Auth.currentAuthenticatedUser()
-      this.setState({ user, ...nextProps })
-    } catch (err) {
-      this.setState({ user: {}, ...nextProps })
-    }
+
+  redirectUserToSignIn = (nextProps) => {
+    this.setState((nextProps ? { isLoading: false, ...nextProps } : { isLoading: false }))
+    const navigateAction = NavigationActions.navigate({
+      routeName: 'NotLoggedInStack'
+    })
+    this.props.navigation.dispatch(navigateAction)
+  }
+
+  componentDidMount () {
+    StatusBar.setHidden(true)
+    this.signInUser()
+  }
+  componentWillReceiveProps (nextProps) {
+    this.signInUser(nextProps)
   }
 
   render () {
@@ -49,7 +64,9 @@ class RootContainer extends Component {
 }
 
 const mapStateToProps = state => ({
-  auth: state.auth.hasAuthenticated
+  auth: state.auth.hasAuthenticated,
+  user: state.auth.user,
+  nav: state.nav
 })
 
 export default connect(mapStateToProps)(RootContainer)
