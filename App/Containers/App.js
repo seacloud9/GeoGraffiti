@@ -1,16 +1,12 @@
 
 import '../Config'
 import DebugConfig from '../Config/DebugConfig'
-import { View, StatusBar, ActivityIndicator } from 'react-native'
 import Amplify from 'aws-amplify'
-import ReduxPersist from '../Config/ReduxPersist'
 import React, { Component } from 'react'
 import { Provider } from 'react-redux'
 import ReduxNavigation, {appReducer} from '../Navigation/ReduxNavigation'
 import createStore from '../Redux'
 import config from '../aws-exports'
-import { Colors } from '../Themes'
-import styles from './Styles/RootContainerStyles'
 
 Amplify.configure(config)
 // create our store
@@ -39,7 +35,6 @@ class App extends Component {
   }
 
   render () {
-    console.log(ReduxPersist)
     return (
       <Provider store={store}>
         <ReduxNavigation />

@@ -3,6 +3,17 @@ import Immutable from 'seamless-immutable'
 
 /* ------------- Types and Action Creators ------------- */
 
+export class currentUser {
+  user = {}
+  static setCurrentUser = (_user) => {
+    this.user = _user
+  }
+
+  static getCurrentUser = (_user) => {
+    return this.user
+  }
+}
+
 const { Types, Creators } = createActions({
   authRequest: ['data'],
   authSuccess: ['payload'],
@@ -57,18 +68,25 @@ export const AuthSelectors = {
 /* ------------- Reducers ------------- */
 
 // request the data from an api
-export const request = (state, { data }) => state.merge({ fetching: true, data, payload: null })
+export const request = (state, { data }) => state.merge({ fetching: true, data, payload: null, hasAuthenticated: false })
 // successful api lookup
+/*
+the hackway for now
+https://github.com/aws-amplify/amplify-js/issues/1573
+https://stackoverflow.com/questions/50375332/typeerror-user-sendmfacode-is-not-a-function-redux-saga-and-aws-amplify
+https://github.com/aws-amplify/amplify-js/issues/192#issuecomment-389309056
+*/
 export const success = (state, {data}) => {
-  console.log(`success`)
-  console.log(data)
-  console.log(`success`)
   const { user } = data
+  currentUser.setCurrentUser(user)
   return state.merge({ fetching: false, error: null, user: user })
+}
+export const confirmLoginSuccess = (state, action) => {
+  return state.merge({ fetching: false, error: null, hasAuthenticated: true, isAuthenticating: false, showSignInConfirmationModal: false })
 }
 
 export const confirmSignupSuccess = (state, action) => {
-  return state.merge({ fetching: false, error: null, hasAuthenticated: true, isAuthenticating: false })
+  return state.merge({ fetching: false, error: null, hasAuthenticated: true, isAuthenticating: false, showSignUpConfirmationModal: false })
 }
 
 export const showSignUpConfirmationModal = (state, action) => {
@@ -101,6 +119,6 @@ export const reducer = createReducer(INITIAL_STATE, {
   [Types.CONFIRM_SIGNUP_SUCCESS]: confirmSignupSuccess,
   [Types.CONFIRM_SIGNUP_FAILURE]: failure,
   [Types.CONFIRM_LOGIN]: request,
-  [Types.CONFIRM_LOGIN_SUCCESS]: success,
+  [Types.CONFIRM_LOGIN_SUCCESS]: confirmLoginSuccess,
   [Types.CONFIRM_LOGIN_FAILURE]: failure
 })
