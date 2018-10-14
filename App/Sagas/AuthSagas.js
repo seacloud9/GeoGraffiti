@@ -15,11 +15,7 @@ import AuthActions, {currentUser} from '../Redux/AuthRedux'
 import { Auth } from 'aws-amplify'
 
 export function * confirmUserLogin ({data}) {
-  console.log(`confirmUserLogin`)
   const {authCode} = data
-  console.log(authCode)
-  console.log(currentUser.getCurrentUser())
-  console.log(`confirmUserLogin`)
   const response = yield Auth.confirmSignIn(currentUser.getCurrentUser(), authCode)
   if (response.Session) {
     yield put(AuthActions.confirmLoginSuccess(response))
@@ -35,9 +31,6 @@ export function * confirmUserLogin ({data}) {
 
 export function * confirmUserSignUp ({data}) {
   const {username, authCode} = data
-  console.log(`confirmUserSignUp`)
-  console.log(currentUser.getCurrentUser())
-  console.log(`confirmUserSignUp`)
   const response = yield Auth.confirmSignUp(username, authCode)
   if (response === 'SUCCESS') {
     yield put(AuthActions.confirmSignupSuccess(response))
@@ -53,11 +46,7 @@ export function * confirmUserSignUp ({data}) {
 export function * authenticate ({data}) {
   const {username, password} = data
   const response = yield Auth.signIn(username, password)
-  console.log(`authenticate`)
-  console.log(response)
-  console.log(`authenticate`)
   if (response.username) {
-    console.log(`in login...`)
     yield put(AuthActions.logInSuccess({user: response}))
     yield put(AuthActions.showSignInConfirmationModal())
   } else {
@@ -85,12 +74,8 @@ export function * createUser ({data}) {
   // success?
   if (response.user) {
     yield put(AuthActions.signUpSuccess(response))
-    console.log(`updating...`)
-    console.log(response)
-    console.log(`updating...`)
     yield put(AuthActions.showSignUpConfirmationModal())
   } else {
-    console.log(`createUser fail`)
     yield put(AuthActions.signUpFailure(response))
   }
 }

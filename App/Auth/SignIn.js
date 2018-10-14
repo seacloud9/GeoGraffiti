@@ -100,9 +100,18 @@ class SignIn extends Component {
           showSignInConfirmationModal && (
             <Modal
               visible={(this.state.showSignInConfirmationModal || !this.state.hasAuthed)}
+              onRequestClose={() => {}}
             >
               <View style={styles.modal}>
                 <Input
+                  style={{height: 45,
+                    width: 150,
+                    marginBottom: 15,
+                    borderBottomWidth: 1.5,
+                    fontSize: 16,
+                    borderBottomColor: '#FF1493',
+                    fontFamily: 'Lato-Light'
+                  }}
                   placeholder='Authorization Code'
                   type='authCode'
                   onChangeText={this.onChangeText}
