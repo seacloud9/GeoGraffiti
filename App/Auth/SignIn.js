@@ -6,23 +6,22 @@ import {
   Image,
   Modal
 } from 'react-native'
-
 import { connect } from 'react-redux'
-
 import AuthActions from '../Redux/AuthRedux'
 import { Fonts } from '../Themes'
-
 import Input from '../Components/Input'
 import Button from '../Components/Button'
+
+const initialState = {
+  username: '',
+  password: '',
+  accessCode: ''
+}
 
 class SignIn extends Component {
   constructor (props) {
     super(props)
-    this.state = {
-      username: '',
-      password: '',
-      accessCode: ''
-    }
+    this.state = initialState
   }
 
   onChangeText = (key, value) => {
@@ -42,9 +41,9 @@ class SignIn extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    const {auth: { showSignInConfirmationModal}} = nextProps
+    const {auth: {showSignInConfirmationModal}} = nextProps
     if (!showSignInConfirmationModal && this.props.auth.showSignInConfirmationModal && !nextProps.user) {
-      // this.setState(initialState)
+     // this.setState(initialState)
     }
 
     if (nextProps.user) {
@@ -99,7 +98,9 @@ class SignIn extends Component {
         <Text style={[styles.errorMessage, signInError && { color: 'black' }]}>{signInErrorMessage}</Text>
         {
           showSignInConfirmationModal && (
-            <Modal>
+            <Modal
+              visible={(this.state.showSignInConfirmationModal || !this.state.hasAuthed)}
+            >
               <View style={styles.modal}>
                 <Input
                   placeholder='Authorization Code'
@@ -130,6 +131,7 @@ const mapDispatchToProps = (dispatch) => {
 }
 
 const mapStateToProps = state => ({
+  hasAuthed: state.auth.hasAuthenticated,
   auth: state.auth,
   user: state.auth.user
 })

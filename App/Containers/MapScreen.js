@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 import MapView from 'react-native-maps'
 import { Location } from 'expo-location'
 import { Button } from 'react-native-elements'
-import Icon from 'react-native-vector-icons/FontAwesome'
 import { Permissions } from 'expo-permissions'
 // Styles
 import styles from './Styles/MapScreenStyle'

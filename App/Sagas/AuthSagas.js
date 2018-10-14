@@ -11,18 +11,21 @@
 *************************************************************/
 import { NavigationActions } from 'react-navigation'
 import { put } from 'redux-saga/effects'
-import AuthActions from '../Redux/AuthRedux'
+import AuthActions, {currentUser} from '../Redux/AuthRedux'
 import { Auth } from 'aws-amplify'
 
 export function * confirmUserLogin ({data}) {
   console.log(`confirmUserLogin`)
-  const {authCode, user} = data
+  const {authCode} = data
   console.log(authCode)
-  console.log(user)
+  console.log(currentUser.getCurrentUser())
   console.log(`confirmUserLogin`)
-  const response = yield Auth.confirmSignIn(user, authCode)
-  if (response === 'SUCCESS') {
+  const response = yield Auth.confirmSignIn(currentUser.getCurrentUser(), authCode)
+  if (response.Session) {
     yield put(AuthActions.confirmLoginSuccess(response))
+    yield put(NavigationActions.navigate({
+      routeName: 'LoggedInStack'
+    }))
     console.log('data from confirmLogin: ', response)
   } else {
     console.log('error signing in: ', response)
@@ -32,6 +35,9 @@ export function * confirmUserLogin ({data}) {
 
 export function * confirmUserSignUp ({data}) {
   const {username, authCode} = data
+  console.log(`confirmUserSignUp`)
+  console.log(currentUser.getCurrentUser())
+  console.log(`confirmUserSignUp`)
   const response = yield Auth.confirmSignUp(username, authCode)
   if (response === 'SUCCESS') {
     yield put(AuthActions.confirmSignupSuccess(response))

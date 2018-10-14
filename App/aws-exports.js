@@ -2,6 +2,7 @@
 import Secrets from 'react-native-config'
 
 const awsmobile = {
+  'userPoolWebClientId':Secrets.WEBPOOL,
   'aws_cognito_region': 'us-west-2',
   'aws_appsync_graphqlEndpoint': Secrets.GRAPHQL,
   'aws_appsync_region': 'us-west-2',

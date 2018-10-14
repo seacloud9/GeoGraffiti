@@ -60,6 +60,9 @@ export const AuthSelectors = {
 export const request = (state, { data }) => state.merge({ fetching: true, data, payload: null })
 // successful api lookup
 export const success = (state, {data}) => {
+  console.log(`success`)
+  console.log(data)
+  console.log(`success`)
   const { user } = data
   return state.merge({ fetching: false, error: null, user: user })
 }

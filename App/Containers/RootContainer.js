@@ -4,6 +4,7 @@ import { NavigationActions } from 'react-navigation'
 import { Auth } from 'aws-amplify'
 import { Colors } from '../Themes'
 import { connect } from 'react-redux'
+// import {currentUser} from '../Redux/AuthRedux'
 
 // import ReduxPersist from '../Config/ReduxPersist'
 
@@ -28,11 +29,11 @@ class RootContainer extends Component {
       const navigateAction = NavigationActions.navigate({
         routeName: 'LoggedInStack'
       })
+      this.getCurrentUser()
       this.props.navigation.dispatch(navigateAction)
     } catch (err) {
       console.log(err)
       nextProps ? this.setState({ isLoading: false }, () => {
-        console.log(this.state)
       }) : this.redirectUserToSignIn()
     }
   }
@@ -49,8 +50,26 @@ class RootContainer extends Component {
     StatusBar.setHidden(true)
     this.signInUser()
   }
+
   componentWillReceiveProps (nextProps) {
     this.signInUser(nextProps)
+  }
+
+  getCurrentUser () {
+    Auth.currentUserInfo().then(currentAccount => {
+      this.setState({
+        currentAccount: currentAccount,
+        isAuthenticated: true,
+        isLoading: false
+      })
+    }).catch(error => {
+      this.setState({
+        authError: error,
+        currentAccount: {},
+        isAuthenticated: false,
+        isLoading: false
+      })
+    })
   }
 
   render () {

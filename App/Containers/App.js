@@ -39,6 +39,7 @@ class App extends Component {
   }
 
   render () {
+    console.log(ReduxPersist)
     return (
       <Provider store={store}>
         <ReduxNavigation />
