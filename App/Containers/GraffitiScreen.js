@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import { Text, View, StyleSheet, TouchableHighlight } from 'react-native'
+import { connect } from 'react-redux'
 import Secrets from 'react-native-config'
 import {
   ViroARSceneNavigator
@@ -21,12 +22,13 @@ var AR_NAVIGATOR_TYPE = 'AR'
 // This determines which type of experience to launch in, or UNSET, if the user should
 // be presented with a choice of AR or VR. By default, we offer the user a choice.
 var defaultNavigatorType = UNSET
-export default class GraffitiScreen extends Component {
+class GraffitiScreen extends Component {
   constructor (props) {
     super(props)
     this.state = {
       navigatorType: defaultNavigatorType,
-      sharedProps: sharedProps
+      sharedProps: sharedProps,
+      ...props
     }
     this._getExperienceSelector = this._getExperienceSelector.bind(this)
     this._getARNavigator = this._getARNavigator.bind(this)
@@ -48,11 +50,20 @@ export default class GraffitiScreen extends Component {
     )
   }
 
+  getGeoGraffiti () {
+    console.log(`getGeoGraffiti`)
+    console.log(this.state)
+    console.log(`getGeoGraffiti`)
+    return (
+      <GeoGraffiti location={this.state.location} />
+    )
+  }
+
   // Returns the ViroARSceneNavigator which will start the AR experience
   _getARNavigator () {
     return (
       <ViroARSceneNavigator {...this.state.sharedProps}
-        initialScene={{scene: GeoGraffiti}} />
+        initialScene={{scene: this.getGeoGraffiti.bind(this)}} />
     )
   }
 
@@ -91,6 +102,13 @@ export default class GraffitiScreen extends Component {
     )
   }
 }
+
+const mapStateToProps = (state) => {
+  return {
+    location: state.geo.location
+  }
+}
+export default connect(mapStateToProps, null)(GraffitiScreen)
 
 var localStyles = StyleSheet.create({
   viroContainer: {

@@ -1,7 +1,7 @@
 'use strict'
 
 import React, { Component } from 'react'
-
+import PropTypes from 'prop-types'
 import {StyleSheet} from 'react-native'
 
 import {
@@ -11,8 +11,8 @@ import {
 } from 'react-viro'
 
 export default class GeoGraffiti extends Component {
-  constructor () {
-    super()
+  constructor (props) {
+    super(props)
 
     // Set initial state here
     this.state = {
@@ -24,13 +24,18 @@ export default class GeoGraffiti extends Component {
       eastPointX: 0,
       eastPointZ: 0,
       westPointX: 0,
-      westPointZ: 0
+      westPointZ: 0,
+      ...props
     }
 
     // bind 'this' to functions
     this._onInitialized = this._onInitialized.bind(this)
     this._latLongToMerc = this._latLongToMerc.bind(this)
     this._transformPointToAR = this._transformPointToAR.bind(this)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    this.setState(nextProps)
   }
 
   render () {
@@ -48,14 +53,14 @@ export default class GeoGraffiti extends Component {
   _onInitialized (state, reason) {
     if (state === ViroConstants.TRACKING_NORMAL) {
       // hard coded location for now
+      var currentLocation = this._transformPointToAR(this.props.location.coords.latitude, this.props.location.coords.longitude)
       var northPoint = this._transformPointToAR(47.618574, -122.338475)
       var eastPoint = this._transformPointToAR(47.618534, -122.338061)
       var westPoint = this._transformPointToAR(47.618539, -122.338644)
       var southPoint = this._transformPointToAR(47.618210, -122.338455)
-      console.log('obj north final x:' + northPoint.x + 'final z:' + northPoint.z)
-      console.log('obj south final x:' + southPoint.x + 'final z:' + southPoint.z)
-      console.log('obj east point x' + eastPoint.x + 'final z' + eastPoint.z)
-      console.log('obj west point x' + westPoint.x + 'final z' + westPoint.z)
+      console.log('currentLocation')
+      console.log(currentLocation)
+      console.log('currentLocation')
       this.setState({
         northPointX: northPoint.x,
         northPointZ: northPoint.z,
@@ -84,7 +89,7 @@ export default class GeoGraffiti extends Component {
 
   _transformPointToAR (lat, long) {
     var objPoint = this._latLongToMerc(lat, long)
-    var devicePoint = this._latLongToMerc(47.618534, -122.338478)
+    var devicePoint = this._latLongToMerc(lat, long)
     console.log('objPointZ: ' + objPoint.y + ', objPointX: ' + objPoint.x)
   // latitude(north,south) maps to the z axis in AR
   // longitude(east, west) maps to the x axis in AR
@@ -104,4 +109,9 @@ var styles = StyleSheet.create({
     textAlign: 'center'
   }
 })
+
+GeoGraffiti.propTypes = {
+  location: PropTypes.object.isRequired
+}
+
 module.exports = GeoGraffiti

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native'
 import { connect } from 'react-redux'
 import MapView from 'react-native-maps'
 import { Location } from 'expo-location'
+import GeoActions from '../Redux/GeoRedux'
 import { Button } from 'react-native-elements'
 import { Permissions } from 'expo-permissions'
 // Styles
@@ -22,6 +23,7 @@ class MapScreen extends Component {
         throw new Error('No permission!')
       }
       const location = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
+      this.props.geoSet({location})
       this.setState({ location: location.coords })
     } catch (e) {
       console.log('error', e)
@@ -37,6 +39,7 @@ class MapScreen extends Component {
     } else {
       try {
         let location = await Location.getCurrentPositionAsync({})
+        this.props.geoSet({location})
         this.setState({ location })
       } catch (e) {
         console.log('error', e)
@@ -111,6 +114,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
+    geoSet: (data) => dispatch(GeoActions.geoSet(data))
   }
 }
 
