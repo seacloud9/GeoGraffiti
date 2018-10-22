@@ -2,8 +2,11 @@ import React, { Component } from 'react'
 import { Text, View, StyleSheet, TouchableHighlight } from 'react-native'
 import { connect } from 'react-redux'
 import Secrets from 'react-native-config'
+import { Button } from 'react-native-elements'
 import {
-  ViroARSceneNavigator
+  ViroARSceneNavigator,
+  ViroMaterials,
+  ViroSphere
 } from 'react-viro'
 import GeoGraffiti from '../Xr/GeoGraffiti'
 
@@ -28,6 +31,8 @@ class GraffitiScreen extends Component {
     this.state = {
       navigatorType: defaultNavigatorType,
       sharedProps: sharedProps,
+      sphereBushArray: [],
+      localTransform: {},
       ...props
     }
     this._getExperienceSelector = this._getExperienceSelector.bind(this)
@@ -51,19 +56,58 @@ class GraffitiScreen extends Component {
   }
 
   getGeoGraffiti () {
-    console.log(`getGeoGraffiti`)
-    console.log(this.state)
-    console.log(`getGeoGraffiti`)
     return (
-      <GeoGraffiti location={this.state.location} />
+      <GeoGraffiti
+        location={this.state.location}
+        onLocationUpdate={this._onLocationUpdate}
+        sphereBushArray={this.state.sphereBushArray}
+           />
     )
+  }
+
+  _onPaint = () => {
+    let _sphereBushArray = this.state.sphereBushArray.concat()
+    _sphereBushArray.push(<ViroSphere
+      heightSegmentCount={20}
+      widthSegmentCount={20}
+      radius={2}
+      scale={[0.02, 0.02, 0.02]}
+      position={this.state.localTransform.position}
+      key={this.state.sphereBushArray.length}
+      materials={['basic']}
+   />)
+    this.setState({sphereBushArray: _sphereBushArray})
+    this.timer = setTimeout(this._onPaint, 200)
+  }
+
+  _stopTimer = () => {
+    clearTimeout(this.timer)
+  }
+
+  _onLocationUpdate = (location) => {
+    // console.log(JSON.stringify(location))
+    this.setState({localTransform: location})
   }
 
   // Returns the ViroARSceneNavigator which will start the AR experience
   _getARNavigator () {
     return (
-      <ViroARSceneNavigator {...this.state.sharedProps}
-        initialScene={{scene: this.getGeoGraffiti.bind(this)}} />
+      <View style={{flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: 'transparent'}}>
+        <ViroARSceneNavigator {...this.state.sharedProps}
+          initialScene={{scene: this.getGeoGraffiti.bind(this)}}
+          />
+        <Button
+          buttonStyle={{opacity: 0.6, backgroundColor: '#104aa8', borderWidth: 1, borderColor: '#ffffff', borderRadius: 10, margin: 10}}
+          leftIcon={{
+            color: 'white',
+            name: 'spray',
+            type: 'material-community',
+            size: 18
+          }}
+          onPress={this._onPaint.bind(this)}
+          onPressOut={this._stopTimer.bind(this)}
+          title='Grafitti' />
+      </View>
     )
   }
 
@@ -162,5 +206,26 @@ var localStyles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fff'
+  }
+})
+
+ViroMaterials.createMaterials({
+  defaultSphereBush: {
+    diffuseColor: '#0286f4',
+    specularTexture: require('../assets/materials/metal.jpg'),
+    diffuseIntensity: 0.7,
+    shininess: 0.4,
+    lightingModel: 'Phong'
+  },
+  defaultSphereBushLambert: {
+    diffuseColor: '#0286f4',
+    diffuseTexture: require('../assets/materials/metal.jpg'),
+    diffuseIntensity: 0.7,
+    shininess: 0.4,
+    lightingModel: 'Lambert'
+  },
+  basic: {
+    diffuseColor: '#0286f4',
+    diffuseTexture: require('../assets/materials/metal.jpg')
   }
 })

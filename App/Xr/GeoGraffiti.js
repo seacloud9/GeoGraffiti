@@ -7,7 +7,9 @@ import {StyleSheet} from 'react-native'
 import {
   ViroARScene,
   ViroText,
-  ViroConstants
+  ViroConstants,
+  ViroSphere,
+  ViroMaterials
 } from 'react-viro'
 
 export default class GeoGraffiti extends Component {
@@ -17,6 +19,7 @@ export default class GeoGraffiti extends Component {
     // Set initial state here
     this.state = {
       text: 'Initializing AR...',
+      localTransform: {},
       northPointX: 0,
       northPointZ: 0,
       southPointX: 0,
@@ -27,7 +30,7 @@ export default class GeoGraffiti extends Component {
       westPointZ: 0,
       ...props
     }
-
+    this.timer = null
     // bind 'this' to functions
     this._onInitialized = this._onInitialized.bind(this)
     this._latLongToMerc = this._latLongToMerc.bind(this)
@@ -39,15 +42,19 @@ export default class GeoGraffiti extends Component {
   }
 
   render () {
+    // console.log(this.props.sphereBushArray)
     return (
-      <ViroARScene onTrackingUpdated={this._onInitialized} >
-        <ViroText text={this.state.text} scale={[0.2, 2, 0.2]} position={[0, -2, -5]} style={styles.helloWorldTextStyle} />
-        <ViroText text='North Text' scale={[3, 3, 3]} transformBehaviors={['billboard']} position={[this.state.northPointX, 0, this.state.northPointZ]} style={styles.helloWorldTextStyle} />
-        <ViroText text='South Text' scale={[3, 3, 3]} transformBehaviors={['billboard']} position={[this.state.southPointX, 0, this.state.southPointZ]} style={styles.helloWorldTextStyle} />
-        <ViroText text='West Text' scale={[3, 3, 3]} transformBehaviors={['billboard']} position={[this.state.westPointX, 0, this.state.westPointZ]} style={styles.helloWorldTextStyle} />
-        <ViroText text='East Text' scale={[3, 3, 3]} transformBehaviors={['billboard']} position={[this.state.eastPointX, 0, this.state.eastPointZ]} style={styles.helloWorldTextStyle} />
+      <ViroARScene onTrackingUpdated={this._onInitialized} onCameraTransformUpdate={this._onCamerMove} >
+        {
+          this.props.sphereBushArray
+        }
       </ViroARScene>
     )
+  }
+
+  _onCamerMove = (obj) => {
+    this.setState({localTransform: obj.cameraTransform})
+    this.props.onLocationUpdate(this.state.localTransform)
   }
 
   _onInitialized (state, reason) {
@@ -90,9 +97,9 @@ export default class GeoGraffiti extends Component {
   _transformPointToAR (lat, long) {
     var objPoint = this._latLongToMerc(lat, long)
     var devicePoint = this._latLongToMerc(lat, long)
-    console.log('objPointZ: ' + objPoint.y + ', objPointX: ' + objPoint.x)
-  // latitude(north,south) maps to the z axis in AR
-  // longitude(east, west) maps to the x axis in AR
+    // console.log('objPointZ: ' + objPoint.y + ', objPointX: ' + objPoint.x)
+    // latitude(north,south) maps to the z axis in AR
+    // longitude(east, west) maps to the x axis in AR
     var objFinalPosZ = objPoint.y - devicePoint.y
     var objFinalPosX = objPoint.x - devicePoint.x
   // flip the z, as negative z(is in front of us which is north, pos z is behind(south).
@@ -107,6 +114,27 @@ var styles = StyleSheet.create({
     color: '#000000',
     textAlignVertical: 'center',
     textAlign: 'center'
+  },
+  RedTextStyle: {
+    fontFamily: 'Arial',
+    fontSize: 30,
+    color: 'red',
+    textAlignVertical: 'center',
+    textAlign: 'center'
+  }
+})
+
+ViroMaterials.createMaterials({
+  defaultSphereBush: {
+    diffuseColor: '#0286f4',
+    specularTexture: require('../assets/materials/metal.jpg'),
+    diffuseIntensity: 0.7,
+    shininess: 0.4,
+    lightingModel: 'Phong'
+  },
+  test: {
+    diffuseColor: '#0286f4',
+    diffuseTexture: require('../assets/materials/metal.jpg')
   }
 })
 
